@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// const api     = axios.create({ baseURL:'/api', timeout:90000 });
-// const apiLong = axios.create({ baseURL:'/api', timeout:180000 });
-const api     = axios.create({ baseURL:'http://158.69.165.245:81/api', timeout:90000 });
-const apiLong = axios.create({ baseURL:'http://158.69.165.245:81/api', timeout:180000 });
+const api     = axios.create({ baseURL:'/api', timeout:90000 });
+const apiLong = axios.create({ baseURL:'/api', timeout:180000 });
+// const api     = axios.create({ baseURL:'http://158.69.165.245:81/api', timeout:90000 });
+// const apiLong = axios.create({ baseURL:'http://158.69.165.245:81/api', timeout:180000 });
 
 const attach = config => {
   const t = localStorage.getItem('tf_token');
