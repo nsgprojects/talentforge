@@ -49,32 +49,52 @@ function insertIntoDOCX(originalDocxBase64, roleInsertions) {
   });
 }
 
+// ── Reshape flat parsed content to { header, summary, skills, experiences, ... } ──
+// Handles both old flat shape { name, email, ... } and new { header: { name, ... } } shape.
+// generate_docx.py requires the header-wrapped shape.
+function reshapeForDocx(parsed) {
+  if (!parsed || typeof parsed !== 'object') return { header:{}, summary:'', skills:{}, experiences:[], education:[], certifications:[] };
+  // Already shaped correctly
+  if (parsed.header && (parsed.header.name !== undefined || parsed.header.email !== undefined)) {
+    // Normalise skills inside the shaped object if it's still a flat array
+    var skills = parsed.skills || {};
+    if (Array.isArray(skills)) skills = skills.length > 0 ? { 'Detected Skills': skills } : {};
+    var edu = parsed.education || [];
+    if (typeof edu === 'string') edu = edu ? [{ school:edu, degree:'', start:'', end:'', gpa:'', location:'' }] : [];
+    return Object.assign({}, parsed, { skills, education: Array.isArray(edu) ? edu : [] });
+  }
+  // Old flat shape — rebuild header
+  var skills = parsed.skills || {};
+  if (Array.isArray(skills)) skills = skills.length > 0 ? { 'Detected Skills': skills } : {};
+  var edu = parsed.education || [];
+  if (typeof edu === 'string') edu = edu ? [{ school:edu, degree:'', start:'', end:'', gpa:'', location:'' }] : [];
+  return {
+    header: {
+      name:     parsed.name     || '',
+      email:    parsed.email    || '',
+      phone:    parsed.phone    || '',
+      location: parsed.location || '',
+      linkedin: parsed.linkedin || '',
+      github:   parsed.github   || '',
+    },
+    summary:        parsed.summary        || '',
+    skills,
+    experiences:    Array.isArray(parsed.experiences)    ? parsed.experiences    : [],
+    education:      Array.isArray(edu)                   ? edu                   : [],
+    certifications: Array.isArray(parsed.certifications) ? parsed.certifications : [],
+    rawText:        parsed.rawText        || '',
+  };
+}
+
 // ── Generate fresh DOCX from template (generate_docx.py) ──
 function generateFromTemplate(resumeParsed, selectedPointsByRole, templateName) {
-  // Normalise resumeParsed — handle both old flat shape and new header-wrapped shape
-  var content = resumeParsed || {};
-  if (!content.header && (content.name || content.email)) {
-    // Old flat shape — reshape
-    content = {
-      header: {
-        name:     content.name     || '',
-        email:    content.email    || '',
-        phone:    content.phone    || '',
-        location: content.location || '',
-        linkedin: content.linkedin || '',
-        github:   content.github   || '',
-      },
-      summary:        content.summary        || '',
-      skills:         content.skills         || {},
-      experiences:    content.experiences    || [],
-      education:      content.education      || [],
-      certifications: content.certifications || [],
-    };
-  }
+  // reshapeForDocx handles old flat { name, email, ... } shape AND new { header: {...} } shape
+  // Also normalises skills flat arrays → grouped object and education string → array
+  var content = reshapeForDocx(resumeParsed);
   return runPython(GENERATE_SCRIPT, {
-    content:             content,
+    content:              content,
     selectedPointsByRole: selectedPointsByRole || [],
-    templateName:        templateName || 'classic',
+    templateName:         templateName || 'classic',
   });
 }
 
